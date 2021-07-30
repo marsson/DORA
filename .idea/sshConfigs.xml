@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="SshConfigs">
+    <configs>
+      <sshConfig authType="PASSWORD" host="cloudtravellers.com" id="62a0cdfa-da45-43af-aeea-d43075b62710" port="22" nameFormat="DESCRIPTIVE" username="domaimoveis" />
+    </configs>
+  </component>
+</project>

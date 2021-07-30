@@ -1,0 +1,204 @@
+
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>Unix Family Tree</title>
+    <link href="css/style.css.css" rel="stylesheet">
+    <style>
+    .node {
+    stroke: #fff;
+    stroke-width: 1.5px;
+    cursor: move;
+    }
+
+    .group {
+    stroke: #fff;
+    stroke-width: 1.5px;
+    cursor: move;
+    opacity: 0.7;
+    }
+
+    .link {
+        stroke: #7a4e4e;
+        stroke-width: 3px;
+        stroke-opacity: 1;
+        marker-end: url(#end-arrow);
+    }
+
+    .label {
+        fill: white;
+        font-family: Verdana;
+        font-size: 25px;
+        text-anchor: middle;
+        cursor: move;
+    }
+
+    </style>
+
+</head >
+<body >
+        <svg>
+        <defs style="user-select: auto;">
+                                                <marker id="end-arrow" viewBox="0 -5 10 10" refX="5" markerWidth="3" markerHeight="3" orient="auto" style="user-select: auto;"> <path d="M0,-5L10,0L0,5L2,0" stroke-width="0px" fill="#000" style="user-select: auto;"></path></marker></defs>
+        </svg>
+<h1>Unix Family Tree</h1>
+<h2>Directed graph flow layout and shortest-path edge routing</h2>
+<script src="js/d3v4.js"></script>
+<script src="js/cola.js"></script>
+<script>
+    var width = 960,
+        height = 960;
+
+    var color = d3.scaleOrdinal(d3.schemeCategory20);
+
+    var cola = cola.d3adaptor(d3)
+        .linkDistance(100)
+        .avoidOverlaps(true)
+        .handleDisconnected(false)
+        .size([width, height]);
+
+    var svg = d3.select("body").append("svg")
+
+        .attr("width", width)
+        .attr("height", height);
+
+
+    d3.json("graphdata/small.json", function (error, graph) {
+
+        graph.nodes.forEach(function (v) {
+            debugger;
+            let padding =50;
+            v.height = 90;
+            v.width = (v.name.length * 14) +padding;
+        })
+        graph.groups.forEach(function (g) { g.padding = 0.01; });
+        cola
+            .nodes(graph.nodes)
+            .links(graph.links)
+            .groups(graph.groups)
+            .start(100, 0, 50, 50);
+
+    svg.append('svg:defs').append('svg:marker')
+    .attr('id', 'end-arrow')
+    .attr('viewBox', '0 -5 10 10')
+    .attr('refX', 5)
+    .attr('markerWidth', 3)
+    .attr('markerHeight', 3)
+    .attr('orient', 'auto')
+    .append('svg:path')
+    .attr('d', 'M0,-5L10,0L0,5L2,0')
+    .attr('stroke-width', '0px')
+    .attr('fill', '#000');
+
+        var group = svg.selectAll(".group")
+            .data(graph.groups)
+            .enter().append("rect")
+            .attr("rx", 8).attr("ry", 8)
+            .attr("class", "group")
+            .style("fill", function (d, i) { return color(i); });
+
+        var link = svg.selectAll(".link")
+            .data(graph.links)
+            .enter().append("line")
+            .attr("class", "link");
+
+        var pad = 20;
+        var node = svg.selectAll(".node")
+            .data(graph.nodes)
+            .enter().append("rect")
+            .attr("class", "node")
+            .attr("width", function (d) { return d.width - 2 * pad; })
+            .attr("height", function (d) { return d.height - 2 * pad; })
+            .attr("rx", 5).attr("ry", 5)
+            .style("fill", function (d) { return color(graph.groups.length); })
+            .call(cola.drag)
+            .on('mouseup', function (d) {
+                d.fixed = 0;
+                cola.alpha(1); // fire it off again to satify gridify
+            });
+
+        function getTspansForNode(d){
+            const lines = d.name.split("[]");
+
+        }
+
+        function getLabel(){
+
+        }
+        var label = svg.selectAll(".label")
+            .data(graph.nodes)
+            .enter().append("text")
+            .attr("class", "label")
+            .append("tspan")
+            .text(function (d) {
+                return d.name;
+            })
+            .call(cola.drag);
+
+
+        node.append("title")
+            .text(function (d) { return d.name; });
+
+        function calculateRelativePosition(d){
+            let relative = {"x2":0,"y2":0};
+            const pixels = 5;
+            const relativex = d.source.x - d.target.x;
+            const relativey = d.source.y - d.target.y;
+
+            if(Math.abs(relativex) > Math.abs(relativey)){
+                if((d.source.x - d.target.x)>0)
+                {
+                    relative.x2 = d.target.x + d.target.width /2 - pad +pixels;
+                    relative.y2 = d.target.y;
+                    return relative;
+                }
+                else
+                {
+                    relative.x2 = d.target.x- d.target.width/2  + pad - pixels;
+                    relative.y2 = d.target.y;
+                    return relative;
+
+                }
+            }
+            if((d.source.y - d.target.y)>0)
+            {
+                relative.x2 = d.target.x
+                relative.y2 = d.target.y + d.target.height /2 - pad + pixels
+                return relative;
+
+            }
+            else
+            {
+                relative.x2 = relative.x2 = d.target.x;
+                relative.y2 = d.target.y - d.target.height/2  + pad - pixels
+                return relative;
+            }
+
+        }
+
+        cola.on("tick", function () {
+
+            link.attr("x1", function (d) { return d.source.x; })
+                .attr("y1", function (d) { return d.source.y; })
+                .attr("x2", function (d) { return calculateRelativePosition(d).x2 })
+                .attr("y2", function (d) { return calculateRelativePosition(d).y2 });
+
+            node.attr("x", function (d) { return d.x - d.width / 2 + pad; })
+                .attr("y", function (d) { return d.y - d.height / 2 + pad; });
+
+            group.attr("x", function (d) { return d.bounds.x; })
+                .attr("y", function (d) { return d.bounds.y; })
+                .attr("width", function (d) { return d.bounds.width(); })
+                .attr("height", function (d) { return d.bounds.height(); });
+
+            label.attr("x", function (d) { return d.x; })
+                .attr("y", function (d) {
+                    var h = this.getBBox().height;
+                    return d.y + h/4;
+                });
+        });
+    });
+
+</script>
+</body>
+</html>
